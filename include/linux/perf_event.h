@@ -1139,6 +1139,14 @@ struct perf_cpu_context {
 	struct perf_event		*heap_default[2];
 };
 
+/**
+ * struct perf_task_context - per task event context structure
+ */
+struct perf_task_context {
+	refcount_t			refcount;
+	local64_t			period_left;
+};
+
 struct perf_output_handle {
 	struct perf_event		*event;
 	struct perf_buffer		*rb;
