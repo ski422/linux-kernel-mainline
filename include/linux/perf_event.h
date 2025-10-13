@@ -856,6 +856,7 @@ struct perf_event {
 
 	struct list_head		owner_entry;
 	struct task_struct		*owner;
+	struct perf_task_context	*perf_task_ctxp;
 
 	/* mmap bits */
 	struct mutex			mmap_mutex;
@@ -1139,12 +1140,17 @@ struct perf_cpu_context {
 	struct perf_event		*heap_default[2];
 };
 
+#define perf_event_equal_task_ctx(attr1, attr2)	\
+	((attr1)->config == (attr2)->config &&	\
+	 (attr1)->sample_period == (attr2)->sample_period)
+
 /**
  * struct perf_task_context - per task event context structure
  */
 struct perf_task_context {
 	refcount_t			refcount;
 	local64_t			period_left;
+	unsigned long			count;
 };
 
 struct perf_output_handle {

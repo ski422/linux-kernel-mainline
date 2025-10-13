@@ -4921,7 +4921,7 @@ alloc_perf_context(struct task_struct *task)
 	ctx = kzalloc(sizeof(struct perf_event_context), GFP_KERNEL);
 	if (!ctx)
 		return NULL;
-
+	printk(KERN_INFO "New alloc_perf_context is allocated for pid %d current %d", task->pid, current->pid);
 	__perf_event_init_context(ctx);
 	if (task)
 		ctx->task = get_task_struct(task);
@@ -5593,11 +5593,14 @@ static void perf_free_addr_filters(struct perf_event *event);
 /*
  * Free a perf_task_ctxp structure
  */
-static inline void perf_put_task_ctxp(void)
+static inline void perf_put_task_ctxp(struct perf_event *event)
 {
-	if (current->perf_task_ctxp &&
-	    refcount_dec_and_test(&current->perf_task_ctxp->refcount))
-		kfree(current->perf_task_ctxp);
+	if (event->perf_task_ctxp)	printk(KERN_INFO "put_task_ctxp refcount: %u", refcount_read(&event->perf_task_ctxp->refcount));
+	if (event->perf_task_ctxp &&
+	    refcount_dec_and_test(&event->perf_task_ctxp->refcount)) {
+		printk(KERN_INFO "put_task_ctxp: free'd!");
+		kfree(event->perf_task_ctxp);
+	}
 }
 
 /* vs perf_event_alloc() error */
@@ -5621,7 +5624,7 @@ static void __free_event(struct perf_event *event)
 
 	 if (event->attr.sample_period &&
 	     event->attr.config == PERF_COUNT_SW_TASK_CLOCK)
-		perf_put_task_ctxp();
+		perf_put_task_ctxp(event);
 
 	if (event->destroy)
 		event->destroy(event);
@@ -11813,6 +11816,7 @@ static void perf_swevent_start_hrtimer(struct perf_event *event)
 	struct hw_perf_event *hwc = &event->hw;
 	s64 period;
 	bool is_count_sw_task_clock = false;
+	struct perf_task_context *ctxp = event->perf_task_ctxp;
 
 	if (!is_sampling_event(event))
 		return;
@@ -11820,7 +11824,7 @@ static void perf_swevent_start_hrtimer(struct perf_event *event)
 	if (event->attr.config == PERF_COUNT_SW_TASK_CLOCK) {
 		is_count_sw_task_clock = true;
 		/* Restore the period_left from task local context. */
-		period = local64_read(&current->perf_task_ctxp->period_left);
+		period = local64_read(&ctxp->period_left);
 	} else {
 		period = local64_read(&hwc->period_left);
 	}
@@ -11829,9 +11833,11 @@ static void perf_swevent_start_hrtimer(struct perf_event *event)
 		if (period < 0)
 			period = 10000;
 
-		if (is_count_sw_task_clock)
-			local64_set(&current->perf_task_ctxp->period_left, 0);
-		else
+		if (is_count_sw_task_clock) {
+			if (!--ctxp->count)
+				local64_set(&ctxp->period_left, 0);
+			printk(KERN_INFO "--ctxp->count: %lu", ctxp->count);
+		} else
 			local64_set(&hwc->period_left, 0);
 	} else {
 		period = max_t(u64, 10000, hwc->sample_period);
@@ -11857,9 +11863,14 @@ static void perf_swevent_cancel_hrtimer(struct perf_event *event)
 	if (is_sampling_event(event) && (hwc->interrupts != MAX_INTERRUPTS)) {
 		ktime_t remaining = hrtimer_get_remaining(&hwc->hrtimer);
 		if (event->attr.config == PERF_COUNT_SW_TASK_CLOCK) {
-			/* Backing up the period_left to task local context. */
-			local64_set(&current->perf_task_ctxp->period_left,
-				    ktime_to_ns(remaining));
+			struct perf_task_context *ctxp = event->perf_task_ctxp;
+			if (!local64_read(&ctxp->period_left)) {
+				/* Backing up the period_left to task local context. */
+				local64_set(&ctxp->period_left,
+					    ktime_to_ns(remaining));
+			}
+			WARN_ON(++ctxp->count > refcount_read(&ctxp->refcount));
+			printk(KERN_INFO "++ctxp->count: %lu", ctxp->count);
 		} else {
 			local64_set(&hwc->period_left, ktime_to_ns(remaining));
 		}
@@ -11990,6 +12001,7 @@ static void task_clock_event_update(struct perf_event *event, u64 now)
 static void task_clock_event_start(struct perf_event *event, int flags)
 {
 	event->hw.state = 0;
+	printk(KERN_INFO "event start, pid: %d event id: %llu period_left: %ld", current->pid, event->id, local64_read(&event->perf_task_ctxp->period_left));
 	local64_set(&event->hw.prev_count, event->ctx->time);
 	perf_swevent_start_hrtimer(event);
 }
@@ -12000,6 +12012,7 @@ static void task_clock_event_stop(struct perf_event *event, int flags)
 	perf_swevent_cancel_hrtimer(event);
 	if (flags & PERF_EF_UPDATE)
 		task_clock_event_update(event, event->ctx->time);
+	printk(KERN_INFO "event stop, pid: %d event id: %llu period_left: %ld", current->pid, event->id, local64_read(&event->perf_task_ctxp->period_left));
 }
 
 static int task_clock_event_add(struct perf_event *event, int flags)
@@ -12881,9 +12894,37 @@ enabled:
  * Allocate a perf_task_context structure
  */
 static inline struct perf_task_context *
-perf_get_task_ctxp(struct task_struct *task)
+perf_get_task_ctxp(struct perf_event *event, struct task_struct *task)
 {
-	struct perf_task_context *perf_task_ctxp = task->perf_task_ctxp;
+	struct perf_event *event_iter;
+	struct perf_task_context *perf_task_ctxp = NULL;
+
+	if (task->perf_event_ctxp) {
+		mutex_lock(&task->perf_event_mutex);
+		list_for_each_entry(event_iter, &task->perf_event_ctxp->event_list, event_entry) {
+			printk(KERN_INFO "list traverse, type: %u %u config: %llu %llu period: %llu %llu", event_iter->attr.type, event->attr.type, event_iter->attr.config, event->attr.config, event_iter->attr.sample_period, event->attr.sample_period);
+			if (perf_event_equal_task_ctx(&event_iter->attr, &event->attr)) {
+				printk(KERN_INFO "list traverse, found identical event! id: %llu", event_iter->id);
+				/* Share the perf_task_context */
+				perf_task_ctxp = event_iter->perf_task_ctxp;
+				refcount_inc(&perf_task_ctxp->refcount);
+				break;
+			}
+		}
+		mutex_unlock(&task->perf_event_mutex);
+	}
+
+	if (!perf_task_ctxp) {
+		printk(KERN_INFO "New allocation of perf_task_ctxp");
+		/* Allocate a new perf_task_context */
+		perf_task_ctxp = kzalloc(sizeof(struct perf_task_context), GFP_KERNEL);
+		if (!perf_task_ctxp)
+			return NULL;
+		refcount_set(&perf_task_ctxp->refcount, 1);
+	}
+
+	/*struct perf_task_context *perf_task_ctxp = event->perf_task_ctxp;
+
 
 	if (!perf_task_ctxp) {
 		perf_task_ctxp = kzalloc(sizeof(struct perf_task_context), GFP_KERNEL);
@@ -12891,10 +12932,11 @@ perf_get_task_ctxp(struct task_struct *task)
 			return NULL;
 
 		refcount_set(&perf_task_ctxp->refcount, 1);
-		task->perf_task_ctxp = perf_task_ctxp;
 	} else {
 		refcount_inc(&perf_task_ctxp->refcount);
-	}
+	}*/
+
+	printk(KERN_INFO "get_task_ctxp refcount: %u", refcount_read(&perf_task_ctxp->refcount));
 
 	return perf_task_ctxp;
 }
@@ -12984,9 +13026,14 @@ perf_event_alloc(struct perf_event_attr *attr, int cpu,
 		 * pmu before we get a ctx.
 		 */
 		event->hw.target = get_task_struct(task);
-		/* Allocation of perf_task_context structure */
-		if (attr->sample_period && event->attr.config == PERF_COUNT_SW_TASK_CLOCK &&
-		    !perf_get_task_ctxp(task))
+	}
+
+	/* Allocation of perf_task_context structure */
+	if (attr->sample_period &&
+	    event->attr.config == PERF_COUNT_SW_TASK_CLOCK) {
+		WARN_ON(!task);
+		event->perf_task_ctxp = perf_get_task_ctxp(event, task);
+		if (!event->perf_task_ctxp)
 			return ERR_PTR(-ENOMEM);
 	}
 
@@ -13459,6 +13506,8 @@ SYSCALL_DEFINE5(perf_event_open,
 	int f_flags = O_RDWR;
 	int cgroup_fd = -1;
 
+	printk(KERN_INFO "perf_event_open pid: %d cpu: %d group_fd: %d", pid, cpu, group_fd);
+
 	/* for future expandability... */
 	if (flags & ~PERF_FLAG_ALL)
 		return -EINVAL;
@@ -13810,6 +13859,7 @@ SYSCALL_DEFINE5(perf_event_open,
 	}
 
 	mutex_lock(&current->perf_event_mutex);
+	printk(KERN_INFO "New perf_event %llu is attached to the task %d", event->id, current->pid);
 	list_add_tail(&event->owner_entry, &current->perf_event_list);
 	mutex_unlock(&current->perf_event_mutex);
 
@@ -14645,7 +14695,6 @@ int perf_event_init_task(struct task_struct *child, u64 clone_flags)
 	mutex_init(&child->perf_event_mutex);
 	INIT_LIST_HEAD(&child->perf_event_list);
 	child->perf_ctx_data = NULL;
-	child->perf_task_ctxp = NULL;
 
 	ret = perf_event_init_context(child, clone_flags);
 	if (ret) {
