@@ -11833,8 +11833,8 @@ static void perf_swevent_start_hrtimer(struct perf_event *event)
 		if (is_count_sw_task_clock) {
 			if (!--ctxp->count)
 				local64_set(&ctxp->period_left, 0);
-		} else
-			local64_set(&hwc->period_left, 0);
+		}
+		local64_set(&hwc->period_left, 0);
 	} else {
 		period = max_t(u64, 10000, hwc->sample_period);
 	}
@@ -11866,9 +11866,8 @@ static void perf_swevent_cancel_hrtimer(struct perf_event *event)
 					    ktime_to_ns(remaining));
 			}
 			WARN_ON(++ctxp->count > refcount_read(&ctxp->refcount));
-		} else {
-			local64_set(&hwc->period_left, ktime_to_ns(remaining));
 		}
+		local64_set(&hwc->period_left, ktime_to_ns(remaining));
 
 		hrtimer_try_to_cancel(&hwc->hrtimer);
 	}
