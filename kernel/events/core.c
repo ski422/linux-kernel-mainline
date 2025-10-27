@@ -13011,7 +13011,7 @@ perf_event_alloc(struct perf_event_attr *attr, int cpu,
 
 		/* Allocation of perf_task_context structure */
 		if (attr->sample_period &&
-		    event->attr.config == PERF_COUNT_SW_TASK_CLOCK) {
+		    attr->config == PERF_COUNT_SW_TASK_CLOCK) {
 			event->perf_task_ctxp = perf_get_task_ctxp(event, task);
 			if (!event->perf_task_ctxp)
 				return ERR_PTR(-ENOMEM);
