@@ -12004,7 +12004,6 @@ static void task_clock_event_stop(struct perf_event *event, int flags)
 
 static int task_clock_event_add(struct perf_event *event, int flags)
 {
-	printk(KERN_INFO "[event_add][%d] pid: %d event_id: %llu, period_left: %lu new_period_left: %lu", smp_processor_id(), current->pid, event->id, local64_read(&event->hw.period_left), local64_read(&event->perf_task_ctxp->period_left));
 	if (flags & PERF_EF_START)
 		task_clock_event_start(event, flags);
 	perf_event_update_userpage(event);
@@ -12015,7 +12014,6 @@ static int task_clock_event_add(struct perf_event *event, int flags)
 static void task_clock_event_del(struct perf_event *event, int flags)
 {
 	task_clock_event_stop(event, PERF_EF_UPDATE);
-	printk(KERN_INFO "[event_del][%d] pid: %d event_id: %llu, period_left: %lu new_period_left: %lu", smp_processor_id(), current->pid, event->id, local64_read(&event->hw.period_left), local64_read(&event->perf_task_ctxp->period_left));
 }
 
 static void task_clock_event_read(struct perf_event *event)
@@ -12897,7 +12895,6 @@ perf_get_task_ctxp(struct perf_event *event, struct task_struct *task)
 				/* Share the perf_task_context */
 				perf_task_ctxp = event_iter->perf_task_ctxp;
 				refcount_inc(&perf_task_ctxp->refcount);
-				printk(KERN_INFO "perf_task_ctxp shared. refcount: %u", refcount_read(&perf_task_ctxp->refcount));
 				break;
 			}
 		}
@@ -12910,7 +12907,6 @@ perf_get_task_ctxp(struct perf_event *event, struct task_struct *task)
 		if (!perf_task_ctxp)
 			return NULL;
 		refcount_set(&perf_task_ctxp->refcount, 1);
-		printk(KERN_INFO "new perf_task_ctxp alloc. refcount: %u", refcount_read(&perf_task_ctxp->refcount));
 	}
 
 	return perf_task_ctxp;
