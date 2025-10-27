@@ -11812,14 +11812,17 @@ static void perf_swevent_start_hrtimer(struct perf_event *event)
 {
 	struct hw_perf_event *hwc = &event->hw;
 	s64 period;
-	bool is_count_sw_task_clock = false;
 	struct perf_task_context *ctxp = event->perf_task_ctxp;
 
 	if (!is_sampling_event(event))
 		return;
 
-	if (event->attr.config == PERF_COUNT_SW_TASK_CLOCK) {
-		is_count_sw_task_clock = true;
+	/*
+	 * If event is per-task task-clock sampling, restore the
+	 * period_left from task local context in the event, rather
+	 * then using the value from the per-CPU event structure.
+	 */
+	if (ctxp) {
 		/* Restore the period_left from task local context. */
 		period = local64_read(&ctxp->period_left);
 	} else {
@@ -11830,7 +11833,8 @@ static void perf_swevent_start_hrtimer(struct perf_event *event)
 		if (period < 0)
 			period = 10000;
 
-		if (is_count_sw_task_clock) {
+		if (ctxp) {
+			/* Counter for the number of restores. */
 			if (!--ctxp->count)
 				local64_set(&ctxp->period_left, 0);
 		}
@@ -11845,6 +11849,7 @@ static void perf_swevent_start_hrtimer(struct perf_event *event)
 static void perf_swevent_cancel_hrtimer(struct perf_event *event)
 {
 	struct hw_perf_event *hwc = &event->hw;
+	struct perf_task_context *ctxp = event->perf_task_ctxp;
 
 	/*
 	 * Careful: this function can be triggered in the hrtimer handler,
@@ -11858,13 +11863,13 @@ static void perf_swevent_cancel_hrtimer(struct perf_event *event)
 	 */
 	if (is_sampling_event(event) && (hwc->interrupts != MAX_INTERRUPTS)) {
 		ktime_t remaining = hrtimer_get_remaining(&hwc->hrtimer);
-		if (event->attr.config == PERF_COUNT_SW_TASK_CLOCK) {
-			struct perf_task_context *ctxp = event->perf_task_ctxp;
+		if (ctxp) {
 			if (!local64_read(&ctxp->period_left)) {
 				/* Backing up the period_left to task local context. */
 				local64_set(&ctxp->period_left,
 					    ktime_to_ns(remaining));
 			}
+			/* Counter for the number of backups. */
 			WARN_ON(++ctxp->count > refcount_read(&ctxp->refcount));
 		}
 		local64_set(&hwc->period_left, ktime_to_ns(remaining));
@@ -12010,6 +12015,7 @@ static void task_clock_event_stop(struct perf_event *event, int flags)
 
 static int task_clock_event_add(struct perf_event *event, int flags)
 {
+	printk(KERN_INFO "[event_add][%d] pid: %d event_id: %llu, period_left: %lu new_period_left: %lu", smp_processor_id(), current->pid, event->id, local64_read(&event->hw.period_left), local64_read(&event->perf_task_ctxp->period_left));
 	if (flags & PERF_EF_START)
 		task_clock_event_start(event, flags);
 	perf_event_update_userpage(event);
@@ -12020,6 +12026,7 @@ static int task_clock_event_add(struct perf_event *event, int flags)
 static void task_clock_event_del(struct perf_event *event, int flags)
 {
 	task_clock_event_stop(event, PERF_EF_UPDATE);
+	printk(KERN_INFO "[event_del][%d] pid: %d event_id: %llu, period_left: %lu new_period_left: %lu", smp_processor_id(), current->pid, event->id, local64_read(&event->hw.period_left), local64_read(&event->perf_task_ctxp->period_left));
 }
 
 static void task_clock_event_read(struct perf_event *event)
@@ -12901,6 +12908,7 @@ perf_get_task_ctxp(struct perf_event *event, struct task_struct *task)
 				/* Share the perf_task_context */
 				perf_task_ctxp = event_iter->perf_task_ctxp;
 				refcount_inc(&perf_task_ctxp->refcount);
+				printk(KERN_INFO "perf_task_ctxp shared. refcount: %u", refcount_read(&perf_task_ctxp->refcount));
 				break;
 			}
 		}
@@ -12913,6 +12921,7 @@ perf_get_task_ctxp(struct perf_event *event, struct task_struct *task)
 		if (!perf_task_ctxp)
 			return NULL;
 		refcount_set(&perf_task_ctxp->refcount, 1);
+		printk(KERN_INFO "new perf_task_ctxp alloc. refcount: %u", refcount_read(&perf_task_ctxp->refcount));
 	}
 
 	return perf_task_ctxp;
@@ -13003,15 +13012,14 @@ perf_event_alloc(struct perf_event_attr *attr, int cpu,
 		 * pmu before we get a ctx.
 		 */
 		event->hw.target = get_task_struct(task);
-	}
 
-	/* Allocation of perf_task_context structure */
-	if (attr->sample_period &&
-	    event->attr.config == PERF_COUNT_SW_TASK_CLOCK) {
-		WARN_ON(!task);
-		event->perf_task_ctxp = perf_get_task_ctxp(event, task);
-		if (!event->perf_task_ctxp)
-			return ERR_PTR(-ENOMEM);
+		/* Allocation of perf_task_context structure */
+		if (attr->sample_period &&
+		    event->attr.config == PERF_COUNT_SW_TASK_CLOCK) {
+			event->perf_task_ctxp = perf_get_task_ctxp(event, task);
+			if (!event->perf_task_ctxp)
+				return ERR_PTR(-ENOMEM);
+		}
 	}
 
 	event->clock = &local_clock;
