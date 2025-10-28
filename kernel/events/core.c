@@ -8514,7 +8514,7 @@ __perf_event_output(struct perf_event *event,
 		goto exit;
 
 	perf_output_sample(&handle, &header, data, event);
-
+	printk(KERN_INFO "Sample is recorded. pid: %d event_id: %llu period_left: %ld count: %lu", current->pid, event->id, local64_read(&event->hw.period_left), local64_read(&event->count));
 	perf_output_end(&handle);
 
 exit:
@@ -10674,6 +10674,7 @@ static int perf_swevent_add(struct perf_event *event, int flags)
 	struct hw_perf_event *hwc = &event->hw;
 	struct hlist_head *head;
 
+	printk(KERN_INFO "swevent_add, pid: %d event_id: %llu period_left: %ld count: %lu", current->pid, event->id, local64_read(&event->hw.period_left), local64_read(&event->count));
 	if (is_sampling_event(event)) {
 		hwc->last_period = hwc->sample_period;
 		perf_swevent_set_period(event);
@@ -10694,6 +10695,7 @@ static int perf_swevent_add(struct perf_event *event, int flags)
 static void perf_swevent_del(struct perf_event *event, int flags)
 {
 	hlist_del_rcu(&event->hlist_entry);
+	printk(KERN_INFO "swevent_del, pid: %d event_id: %llu period_left: %ld count: %lu", current->pid, event->id, local64_read(&event->hw.period_left), local64_read(&event->count));
 }
 
 static void perf_swevent_start(struct perf_event *event, int flags)
@@ -12000,7 +12002,7 @@ static void task_clock_event_update(struct perf_event *event, u64 now)
 static void task_clock_event_start(struct perf_event *event, int flags)
 {
 	event->hw.state = 0;
-	printk(KERN_INFO "event start, pid: %d event id: %llu period_left: %ld", current->pid, event->id, local64_read(&event->perf_task_ctxp->period_left));
+	printk(KERN_INFO "task_clock_start, pid: %d event_id: %llu period_left: %ld new_left: %ld count: %lu", current->pid, event->id, local64_read(&event->hw.period_left), local64_read(&event->perf_task_ctxp->period_left), local64_read(&event->count));
 	local64_set(&event->hw.prev_count, event->ctx->time);
 	perf_swevent_start_hrtimer(event);
 }
@@ -12011,6 +12013,7 @@ static void task_clock_event_stop(struct perf_event *event, int flags)
 	perf_swevent_cancel_hrtimer(event);
 	if (flags & PERF_EF_UPDATE)
 		task_clock_event_update(event, event->ctx->time);
+	printk(KERN_INFO "task_clock_stop, pid: %d event_id: %llu period_left: %ld new_left: %ld count: %lu", current->pid, event->id, local64_read(&event->hw.period_left), local64_read(&event->perf_task_ctxp->period_left), local64_read(&event->count));
 }
 
 static int task_clock_event_add(struct perf_event *event, int flags)
@@ -12906,6 +12909,7 @@ perf_get_task_ctxp(struct perf_event *event, struct task_struct *task)
 				/* Share the perf_task_context */
 				perf_task_ctxp = event_iter->perf_task_ctxp;
 				refcount_inc(&perf_task_ctxp->refcount);
+				printk(KERN_INFO "task_ctxp shared. pid: %d event_id: %llu refcount: %u", task->pid, event->id, refcount_read(&perf_task_ctxp->refcount));
 				break;
 			}
 		}
@@ -12918,6 +12922,7 @@ perf_get_task_ctxp(struct perf_event *event, struct task_struct *task)
 		if (!perf_task_ctxp)
 			return NULL;
 		refcount_set(&perf_task_ctxp->refcount, 1);
+		printk(KERN_INFO "task_ctxp new alloc. pid: %d event_id: %llu refcount: %u", task->pid, event->id, refcount_read(&perf_task_ctxp->refcount));
 	}
 
 	return perf_task_ctxp;
@@ -13011,7 +13016,7 @@ perf_event_alloc(struct perf_event_attr *attr, int cpu,
 
 		/* Allocation of perf_task_context structure */
 		if (attr->sample_period &&
-		    attr->config == PERF_COUNT_SW_TASK_CLOCK) {
+		    attr->config < PERF_COUNT_SW_MAX) {
 			event->perf_task_ctxp = perf_get_task_ctxp(event, task);
 			if (!event->perf_task_ctxp)
 				return ERR_PTR(-ENOMEM);
