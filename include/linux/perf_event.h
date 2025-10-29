@@ -856,6 +856,7 @@ struct perf_event {
 
 	struct list_head		owner_entry;
 	struct task_struct		*owner;
+	/* Per-task container for sampling sw events */
 	struct perf_task_context	*perf_task_ctxp;
 
 	/* mmap bits */
