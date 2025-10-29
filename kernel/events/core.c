@@ -10444,13 +10444,21 @@ static DEFINE_PER_CPU(struct swevent_htable, swevent_htable);
 u64 perf_swevent_set_period(struct perf_event *event)
 {
 	struct hw_perf_event *hwc = &event->hw;
+	struct perf_task_context *ctxp = event->perf_task_ctxp;
 	u64 period = hwc->last_period;
 	u64 nr, offset;
 	s64 old, val;
 
 	hwc->last_period = hwc->sample_period;
 
-	old = local64_read(&hwc->period_left);
+	if (ctxp) {
+		old = local64_read(&ctxp->period_left);
+		local64_set(&hwc->period_left, old);
+		if (old && !--ctxp->count)
+			local64_set(&ctxp->period_left, 0);
+	}
+	else
+		old = local64_read(&hwc->period_left);
 	do {
 		val = old;
 		if (val < 0)
@@ -10674,7 +10682,7 @@ static int perf_swevent_add(struct perf_event *event, int flags)
 	struct hw_perf_event *hwc = &event->hw;
 	struct hlist_head *head;
 
-	printk(KERN_INFO "swevent_add, pid: %d event_id: %llu period_left: %ld count: %lu", current->pid, event->id, local64_read(&event->hw.period_left), local64_read(&event->count));
+	printk(KERN_INFO "swevent_add, pid: %d event_id: %llu period_left: %ld new_left: %ld count: %lu", current->pid, event->id, local64_read(&event->hw.period_left), event->perf_task_ctxp? local64_read(&event->perf_task_ctxp->period_left) : 12345, local64_read(&event->count));
 	if (is_sampling_event(event)) {
 		hwc->last_period = hwc->sample_period;
 		perf_swevent_set_period(event);
@@ -10694,8 +10702,18 @@ static int perf_swevent_add(struct perf_event *event, int flags)
 
 static void perf_swevent_del(struct perf_event *event, int flags)
 {
+	struct perf_task_context *ctxp = event->perf_task_ctxp;
+
 	hlist_del_rcu(&event->hlist_entry);
-	printk(KERN_INFO "swevent_del, pid: %d event_id: %llu period_left: %ld count: %lu", current->pid, event->id, local64_read(&event->hw.period_left), local64_read(&event->count));
+	if (ctxp) {
+		if (!local64_read(&ctxp->period_left)) {
+			WARN_ON(ctxp->count > 0);
+			u64 remaining = local64_read(&event->hw.period_left);
+			local64_set(&ctxp->period_left, remaining);
+		}
+		WARN_ON(++ctxp->count > refcount_read(&ctxp->refcount));
+		printk(KERN_INFO "swevent_del, pid: %d event_id: %llu period_left: %ld new_left: %ld event_count: %lu ctxp_count: %lu", current->pid, event->id, local64_read(&event->hw.period_left), local64_read(&ctxp->period_left), local64_read(&event->count), ctxp->count);
+	}
 }
 
 static void perf_swevent_start(struct perf_event *event, int flags)
@@ -11820,9 +11838,9 @@ static void perf_swevent_start_hrtimer(struct perf_event *event)
 		return;
 
 	/*
-	 * If event is per-task task-clock sampling, restore the
-	 * period_left from task local context in the event, rather
-	 * then using the value from the per-CPU event structure.
+	 * If event is per-task clock sampling, restore the period_left
+	 * from task local context in the event, rather then using the
+	 * value from the per-CPU event structure.
 	 */
 	if (ctxp) {
 		/* Restore the period_left from task local context. */
