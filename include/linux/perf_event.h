@@ -829,6 +829,9 @@ struct perf_event {
 	u16				read_size;
 	struct hw_perf_event		hw;
 
+	/* Per-task sampling state for sw events, survives CPU migration */
+	struct perf_task_context	*perf_task_ctxp;
+
 	struct perf_event_context	*ctx;
 	/*
 	 * event->pmu_ctx points to perf_event_pmu_context in which the event
@@ -857,8 +860,6 @@ struct perf_event {
 
 	struct list_head		owner_entry;
 	struct task_struct		*owner;
-	/* Per-task container for sampling sw events */
-	struct perf_task_context	*perf_task_ctxp;
 
 	/* mmap bits */
 	struct mutex			mmap_mutex;
@@ -1150,17 +1151,17 @@ struct perf_cpu_context {
 	struct perf_event		*heap_default[2];
 };
 
-#define perf_event_equal_task_ctx(attr1, attr2)	\
-	((attr1)->config == (attr2)->config &&	\
-	 (attr1)->sample_period == (attr2)->sample_period)
-
 /**
- * struct perf_task_context - per task event context structure
+ * struct perf_task_context - per-task software event context
+ *
+ * Preserves sampling state across CPU migrations for per-task
+ * software events. When a task migrates, the perf_event may
+ * observe a different hw_perf_event::period_left, breaking the
+ * sampling periodicity from the task's perspective. This structure
+ * is owned by each perf_event individually and follows the task.
  */
 struct perf_task_context {
-	refcount_t			refcount;
 	local64_t			period_left;
-	unsigned long			count;
 };
 
 struct perf_output_handle {
