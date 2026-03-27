@@ -5740,10 +5740,11 @@ static bool exclusive_event_installable(struct perf_event *event,
 
 static void perf_free_addr_filters(struct perf_event *event);
 
-static void perf_free_task_ctxp(struct perf_event *event)
+static void perf_put_task_ctxp(struct perf_event *event)
 {
-	kfree(event->perf_task_ctxp);
-	event->perf_task_ctxp = NULL;
+	if (event->perf_task_ctxp &&
+	    refcount_dec_and_test(&event->perf_task_ctxp->refcount))
+		kfree(event->perf_task_ctxp);
 }
 
 /* vs perf_event_alloc() error */
@@ -5768,7 +5769,7 @@ static void __free_event(struct perf_event *event)
 		detach_perf_ctx_data(event);
 
 	if (event->perf_task_ctxp)
-		perf_free_task_ctxp(event);
+		perf_put_task_ctxp(event);
 
 	if (event->destroy)
 		event->destroy(event);
@@ -10820,13 +10821,10 @@ u64 perf_swevent_set_period(struct perf_event *event)
 
 	hwc->last_period = hwc->sample_period;
 
-	if (ctxp) {
+	if (ctxp)
 		old = local64_read(&ctxp->period_left);
-		local64_set(&ctxp->period_left, 0);
-		local64_set(&hwc->period_left, old);
-	} else {
+	else
 		old = local64_read(&hwc->period_left);
-	}
 	do {
 		val = old;
 		if (val < 0)
@@ -10835,7 +10833,9 @@ u64 perf_swevent_set_period(struct perf_event *event)
 		nr = div64_u64(period + val, period);
 		offset = nr * period;
 		val -= offset;
-	} while (!local64_try_cmpxchg(&hwc->period_left, &old, val));
+	} while (ctxp ?
+		 !local64_try_cmpxchg(&ctxp->period_left, &old, val) :
+		 !local64_try_cmpxchg(&hwc->period_left, &old, val));
 
 	return nr;
 }
@@ -11096,9 +11096,12 @@ static void perf_swevent_del(struct perf_event *event, int flags)
 
 	hlist_del_rcu(&event->hlist_entry);
 
-	if (ctxp && !local64_read(&ctxp->period_left))
-		local64_set(&ctxp->period_left,
-			    local64_read(&event->hw.period_left));
+	if (ctxp) {
+		if (!local64_read(&ctxp->period_left))
+			local64_set(&ctxp->period_left,
+				    event->hw.sample_period);
+		WARN_ON(++ctxp->count > refcount_read(&ctxp->refcount));
+	}
 }
 
 static void perf_swevent_start(struct perf_event *event, int flags)
@@ -12232,11 +12235,6 @@ static void perf_swevent_start_hrtimer(struct perf_event *event)
 	if (!is_sampling_event(event))
 		return;
 
-	/*
-	 * If event has a per-task context, always read period_left from
-	 * it rather than from hw_perf_event, which may be stale after
-	 * CPU migration. A zero value means no backup was stored.
-	 */
 	if (ctxp)
 		period = local64_read(&ctxp->period_left);
 	else
@@ -12246,9 +12244,12 @@ static void perf_swevent_start_hrtimer(struct perf_event *event)
 		if (period < 0)
 			period = 10000;
 
-		if (ctxp)
-			local64_set(&ctxp->period_left, 0);
-		local64_set(&hwc->period_left, 0);
+		if (ctxp) {
+			if (!--ctxp->count)
+				local64_set(&ctxp->period_left, 0);
+		} else {
+			local64_set(&hwc->period_left, 0);
+		}
 	} else {
 		period = max_t(u64, 10000, hwc->sample_period);
 	}
@@ -12274,10 +12275,16 @@ static void perf_swevent_cancel_hrtimer(struct perf_event *event)
 	if (is_sampling_event(event) && (hwc->interrupts != MAX_INTERRUPTS)) {
 		ktime_t remaining = hrtimer_get_remaining(&hwc->hrtimer);
 
-		if (ctxp && !local64_read(&ctxp->period_left))
-			local64_set(&ctxp->period_left,
+		if (ctxp) {
+			if (!local64_read(&ctxp->period_left))
+				local64_set(&ctxp->period_left,
+					    ktime_to_ns(remaining));
+			WARN_ON(++ctxp->count >
+				refcount_read(&ctxp->refcount));
+		} else {
+			local64_set(&hwc->period_left,
 				    ktime_to_ns(remaining));
-		local64_set(&hwc->period_left, ktime_to_ns(remaining));
+		}
 
 		hrtimer_try_to_cancel(&hwc->hrtimer);
 	}
@@ -13298,9 +13305,36 @@ enabled:
 	account_pmu_sb_event(event);
 }
 
-static struct perf_task_context *perf_alloc_task_ctxp(void)
+static struct perf_task_context *
+perf_get_task_ctxp(struct perf_event *event, struct task_struct *task)
 {
-	return kzalloc_obj(struct perf_task_context);
+	struct perf_task_context *ctxp = NULL;
+	struct perf_event_context *ctx = task->perf_event_ctxp;
+	struct perf_event *iter;
+
+	if (ctx) {
+		raw_spin_lock(&ctx->lock);
+		list_for_each_entry(iter, &ctx->event_list, event_entry) {
+			if (iter->perf_task_ctxp &&
+			    iter->owner == current &&
+			    perf_event_equal_task_ctx(&iter->attr,
+						     &event->attr)) {
+				ctxp = iter->perf_task_ctxp;
+				refcount_inc(&ctxp->refcount);
+				break;
+			}
+		}
+		raw_spin_unlock(&ctx->lock);
+	}
+
+	if (!ctxp) {
+		ctxp = kzalloc_obj(struct perf_task_context);
+		if (!ctxp)
+			return NULL;
+		refcount_set(&ctxp->refcount, 1);
+	}
+
+	return ctxp;
 }
 
 /*
@@ -13392,7 +13426,7 @@ perf_event_alloc(struct perf_event_attr *attr, int cpu,
 		if (attr->type == PERF_TYPE_SOFTWARE &&
 		    attr->sample_period &&
 		    attr->config < PERF_COUNT_SW_MAX) {
-			event->perf_task_ctxp = perf_alloc_task_ctxp();
+			event->perf_task_ctxp = perf_get_task_ctxp(event, task);
 			if (!event->perf_task_ctxp)
 				return ERR_PTR(-ENOMEM);
 		}

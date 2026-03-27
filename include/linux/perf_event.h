@@ -1151,17 +1151,20 @@ struct perf_cpu_context {
 	struct perf_event		*heap_default[2];
 };
 
+#define perf_event_equal_task_ctx(a1, a2)	\
+	((a1)->config == (a2)->config &&	\
+	 (a1)->sample_period == (a2)->sample_period)
+
 /**
  * struct perf_task_context - per-task software event context
  *
- * Preserves sampling state across CPU migrations for per-task
- * software events. When a task migrates, the perf_event may
- * observe a different hw_perf_event::period_left, breaking the
- * sampling periodicity from the task's perspective. This structure
- * is owned by each perf_event individually and follows the task.
+ * Shared across per-CPU perf_event instances of the same task to
+ * preserve period_left across CPU migrations.
  */
 struct perf_task_context {
+	refcount_t			refcount;
 	local64_t			period_left;
+	unsigned long			count;
 };
 
 struct perf_output_handle {
