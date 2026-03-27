@@ -1164,7 +1164,6 @@ struct perf_cpu_context {
 struct perf_task_context {
 	refcount_t			refcount;
 	local64_t			period_left;
-	unsigned long			count;
 };
 
 struct perf_output_handle {

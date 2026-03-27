@@ -10813,7 +10813,6 @@ static DEFINE_PER_CPU(struct swevent_htable, swevent_htable);
 
 u64 perf_swevent_set_period(struct perf_event *event)
 {
-	struct perf_task_context *ctxp = event->perf_task_ctxp;
 	struct hw_perf_event *hwc = &event->hw;
 	u64 period = hwc->last_period;
 	u64 nr, offset;
@@ -10821,10 +10820,7 @@ u64 perf_swevent_set_period(struct perf_event *event)
 
 	hwc->last_period = hwc->sample_period;
 
-	if (ctxp)
-		old = local64_read(&ctxp->period_left);
-	else
-		old = local64_read(&hwc->period_left);
+	old = local64_read(&hwc->period_left);
 	do {
 		val = old;
 		if (val < 0)
@@ -10833,9 +10829,7 @@ u64 perf_swevent_set_period(struct perf_event *event)
 		nr = div64_u64(period + val, period);
 		offset = nr * period;
 		val -= offset;
-	} while (ctxp ?
-		 !local64_try_cmpxchg(&ctxp->period_left, &old, val) :
-		 !local64_try_cmpxchg(&hwc->period_left, &old, val));
+	} while (!local64_try_cmpxchg(&hwc->period_left, &old, val));
 
 	return nr;
 }
@@ -11070,8 +11064,13 @@ static void perf_swevent_read(struct perf_event *event)
 static int perf_swevent_add(struct perf_event *event, int flags)
 {
 	struct swevent_htable *swhash = this_cpu_ptr(&swevent_htable);
+	struct perf_task_context *ctxp = event->perf_task_ctxp;
 	struct hw_perf_event *hwc = &event->hw;
 	struct hlist_head *head;
+
+	if (ctxp)
+		local64_set(&hwc->period_left,
+			    local64_read(&ctxp->period_left));
 
 	if (is_sampling_event(event)) {
 		hwc->last_period = hwc->sample_period;
@@ -11096,12 +11095,9 @@ static void perf_swevent_del(struct perf_event *event, int flags)
 
 	hlist_del_rcu(&event->hlist_entry);
 
-	if (ctxp) {
-		if (!local64_read(&ctxp->period_left))
-			local64_set(&ctxp->period_left,
-				    event->hw.sample_period);
-		WARN_ON(++ctxp->count > refcount_read(&ctxp->refcount));
-	}
+	if (ctxp)
+		local64_set(&ctxp->period_left,
+			    local64_read(&event->hw.period_left));
 }
 
 static void perf_swevent_start(struct perf_event *event, int flags)
@@ -12236,20 +12232,15 @@ static void perf_swevent_start_hrtimer(struct perf_event *event)
 		return;
 
 	if (ctxp)
-		period = local64_read(&ctxp->period_left);
-	else
-		period = local64_read(&hwc->period_left);
+		local64_set(&hwc->period_left,
+			    local64_read(&ctxp->period_left));
 
+	period = local64_read(&hwc->period_left);
 	if (period) {
 		if (period < 0)
 			period = 10000;
 
-		if (ctxp) {
-			if (!--ctxp->count)
-				local64_set(&ctxp->period_left, 0);
-		} else {
-			local64_set(&hwc->period_left, 0);
-		}
+		local64_set(&hwc->period_left, 0);
 	} else {
 		period = max_t(u64, 10000, hwc->sample_period);
 	}
@@ -12275,16 +12266,11 @@ static void perf_swevent_cancel_hrtimer(struct perf_event *event)
 	if (is_sampling_event(event) && (hwc->interrupts != MAX_INTERRUPTS)) {
 		ktime_t remaining = hrtimer_get_remaining(&hwc->hrtimer);
 
-		if (ctxp) {
-			if (!local64_read(&ctxp->period_left))
-				local64_set(&ctxp->period_left,
-					    ktime_to_ns(remaining));
-			WARN_ON(++ctxp->count >
-				refcount_read(&ctxp->refcount));
-		} else {
-			local64_set(&hwc->period_left,
+		local64_set(&hwc->period_left, ktime_to_ns(remaining));
+
+		if (ctxp)
+			local64_set(&ctxp->period_left,
 				    ktime_to_ns(remaining));
-		}
 
 		hrtimer_try_to_cancel(&hwc->hrtimer);
 	}
