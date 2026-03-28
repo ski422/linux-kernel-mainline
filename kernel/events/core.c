@@ -13302,7 +13302,8 @@ enabled:
 }
 
 static struct perf_task_context *
-perf_get_task_ctxp(struct perf_event *event, struct task_struct *task)
+perf_get_task_ctxp(struct perf_event *event, struct task_struct *task,
+		   bool inherit)
 {
 	struct perf_task_context *ctxp = NULL;
 	struct perf_event_context *ctx = task->perf_event_ctxp;
@@ -13312,7 +13313,8 @@ perf_get_task_ctxp(struct perf_event *event, struct task_struct *task)
 		raw_spin_lock(&ctx->lock);
 		list_for_each_entry(iter, &ctx->event_list, event_entry) {
 			if (iter->perf_task_ctxp &&
-			    iter->owner == current &&
+			    (iter->owner == current ||
+			     (inherit && !iter->owner)) &&
 			    perf_event_equal_task_ctx(&iter->attr,
 						     &event->attr)) {
 				ctxp = iter->perf_task_ctxp;
@@ -13422,7 +13424,8 @@ perf_event_alloc(struct perf_event_attr *attr, int cpu,
 		if (attr->type == PERF_TYPE_SOFTWARE &&
 		    attr->sample_period &&
 		    attr->config < PERF_COUNT_SW_MAX) {
-			event->perf_task_ctxp = perf_get_task_ctxp(event, task);
+			event->perf_task_ctxp = perf_get_task_ctxp(event, task,
+							!!parent_event);
 			if (!event->perf_task_ctxp)
 				return ERR_PTR(-ENOMEM);
 		}
