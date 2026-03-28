@@ -11068,9 +11068,14 @@ static int perf_swevent_add(struct perf_event *event, int flags)
 	struct hw_perf_event *hwc = &event->hw;
 	struct hlist_head *head;
 
-	if (ctxp)
+	if (ctxp) {
 		local64_set(&hwc->period_left,
 			    local64_read(&ctxp->period_left));
+		printk(KERN_DEBUG "perf-debug: swevent_add cpu=%d config=%llu ctxp_pl=%lld -> hwc_pl=%lld\n",
+		       smp_processor_id(), event->attr.config,
+		       local64_read(&ctxp->period_left),
+		       local64_read(&hwc->period_left));
+	}
 
 	if (is_sampling_event(event)) {
 		hwc->last_period = hwc->sample_period;
@@ -11095,9 +11100,14 @@ static void perf_swevent_del(struct perf_event *event, int flags)
 
 	hlist_del_rcu(&event->hlist_entry);
 
-	if (ctxp)
+	if (ctxp) {
 		local64_set(&ctxp->period_left,
 			    local64_read(&event->hw.period_left));
+		printk(KERN_DEBUG "perf-debug: swevent_del cpu=%d config=%llu hwc_pl=%lld -> ctxp_pl=%lld\n",
+		       smp_processor_id(), event->attr.config,
+		       local64_read(&event->hw.period_left),
+		       local64_read(&ctxp->period_left));
+	}
 }
 
 static void perf_swevent_start(struct perf_event *event, int flags)
