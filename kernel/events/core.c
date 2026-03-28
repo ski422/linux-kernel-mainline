@@ -11069,12 +11069,12 @@ static int perf_swevent_add(struct perf_event *event, int flags)
 	struct hlist_head *head;
 
 	if (ctxp) {
+		printk(KERN_DEBUG "perf-debug: swevent_add pid=%d cpu=%d config=%llu hwc_pl=%lld ctxp_pl=%lld (restore)\n",
+		       current->pid, smp_processor_id(), event->attr.config,
+		       (s64)local64_read(&hwc->period_left),
+		       (s64)local64_read(&ctxp->period_left));
 		local64_set(&hwc->period_left,
 			    local64_read(&ctxp->period_left));
-		printk(KERN_DEBUG "perf-debug: swevent_add cpu=%d config=%llu ctxp_pl=%lld -> hwc_pl=%lld\n",
-		       smp_processor_id(), event->attr.config,
-		       local64_read(&ctxp->period_left),
-		       local64_read(&hwc->period_left));
 	}
 
 	if (is_sampling_event(event)) {
@@ -11101,12 +11101,12 @@ static void perf_swevent_del(struct perf_event *event, int flags)
 	hlist_del_rcu(&event->hlist_entry);
 
 	if (ctxp) {
+		printk(KERN_DEBUG "perf-debug: swevent_del pid=%d cpu=%d config=%llu hwc_pl=%lld ctxp_pl=%lld (backup)\n",
+		       current->pid, smp_processor_id(), event->attr.config,
+		       (s64)local64_read(&event->hw.period_left),
+		       (s64)local64_read(&ctxp->period_left));
 		local64_set(&ctxp->period_left,
 			    local64_read(&event->hw.period_left));
-		printk(KERN_DEBUG "perf-debug: swevent_del cpu=%d config=%llu hwc_pl=%lld -> ctxp_pl=%lld\n",
-		       smp_processor_id(), event->attr.config,
-		       local64_read(&event->hw.period_left),
-		       local64_read(&ctxp->period_left));
 	}
 }
 
@@ -12241,9 +12241,14 @@ static void perf_swevent_start_hrtimer(struct perf_event *event)
 	if (!is_sampling_event(event))
 		return;
 
-	if (ctxp)
+	if (ctxp) {
+		printk(KERN_DEBUG "perf-debug: start_hrtimer pid=%d cpu=%d config=%llu hwc_pl=%lld ctxp_pl=%lld (restore)\n",
+		       current->pid, smp_processor_id(), event->attr.config,
+		       (s64)local64_read(&hwc->period_left),
+		       (s64)local64_read(&ctxp->period_left));
 		local64_set(&hwc->period_left,
 			    local64_read(&ctxp->period_left));
+	}
 
 	period = local64_read(&hwc->period_left);
 	if (period) {
@@ -12275,6 +12280,13 @@ static void perf_swevent_cancel_hrtimer(struct perf_event *event)
 	 */
 	if (is_sampling_event(event) && (hwc->interrupts != MAX_INTERRUPTS)) {
 		ktime_t remaining = hrtimer_get_remaining(&hwc->hrtimer);
+
+		if (ctxp)
+			printk(KERN_DEBUG "perf-debug: cancel_hrtimer pid=%d cpu=%d config=%llu hwc_pl=%lld ctxp_pl=%lld remaining=%lld (backup)\n",
+			       current->pid, smp_processor_id(), event->attr.config,
+			       (s64)local64_read(&hwc->period_left),
+			       (s64)local64_read(&ctxp->period_left),
+			       (s64)ktime_to_ns(remaining));
 
 		local64_set(&hwc->period_left, ktime_to_ns(remaining));
 
@@ -13312,6 +13324,15 @@ perf_get_task_ctxp(struct perf_event *event, struct task_struct *task,
 	if (ctx) {
 		raw_spin_lock(&ctx->lock);
 		list_for_each_entry(iter, &ctx->event_list, event_entry) {
+			if (iter->perf_task_ctxp) {
+				printk(KERN_DEBUG "perf-debug: get_ctxp_iter pid=%d inherit=%d iter_owner=%px current=%px iter_config=%llu iter_period=%llu match_owner=%d match_attr=%d\n",
+				       current->pid, inherit,
+				       iter->owner, current,
+				       iter->attr.config,
+				       iter->attr.sample_period,
+				       (iter->owner == current || (inherit && !iter->owner)),
+				       perf_event_equal_task_ctx(&iter->attr, &event->attr));
+			}
 			if (iter->perf_task_ctxp &&
 			    (iter->owner == current ||
 			     (inherit && !iter->owner)) &&
@@ -13412,6 +13433,11 @@ perf_event_alloc(struct perf_event_attr *attr, int cpu,
 	if (parent_event)
 		event->event_caps = parent_event->event_caps;
 
+	if (attr->type == PERF_TYPE_SOFTWARE && attr->config == 1)
+		printk(KERN_DEBUG "perf-debug: alloc_entry pid=%d task=%px task_pid=%d cpu=%d config=%llu period=%llu parent=%px\n",
+		       current->pid, task, task ? task->pid : -1,
+		       cpu, attr->config, attr->sample_period, parent_event);
+
 	if (task) {
 		event->attach_state = PERF_ATTACH_TASK;
 		/*
@@ -13421,13 +13447,21 @@ perf_event_alloc(struct perf_event_attr *attr, int cpu,
 		 */
 		event->hw.target = get_task_struct(task);
 
-		if (attr->type == PERF_TYPE_SOFTWARE &&
-		    attr->sample_period &&
-		    attr->config < PERF_COUNT_SW_MAX) {
+		if (attr->sample_period &&
+		    attr->config < PERF_COUNT_SW_MAX &&
+		    (attr->type == PERF_TYPE_SOFTWARE || parent_event)) {
 			event->perf_task_ctxp = perf_get_task_ctxp(event, task,
 							!!parent_event);
+			printk(KERN_DEBUG "perf-debug: alloc pid=%d cpu=%d config=%llu period=%llu inherit=%d ctxp=%px\n",
+			       current->pid, event->cpu, attr->config,
+			       attr->sample_period, !!parent_event,
+			       event->perf_task_ctxp);
 			if (!event->perf_task_ctxp)
 				return ERR_PTR(-ENOMEM);
+		} else if (attr->type == PERF_TYPE_SOFTWARE) {
+			printk(KERN_DEBUG "perf-debug: alloc_skip pid=%d cpu=%d config=%llu period=%llu type=%u\n",
+			       current->pid, event->cpu, attr->config,
+			       attr->sample_period, attr->type);
 		}
 	}
 
@@ -14796,6 +14830,11 @@ inherit_event(struct perf_event *parent_event,
 	struct perf_event_pmu_context *pmu_ctx;
 	struct perf_event *child_event;
 	unsigned long flags;
+
+	printk(KERN_DEBUG "perf-debug: inherit_event pid=%d child_pid=%d type=%u config=%llu period=%llu cpu=%d\n",
+	       current->pid, child->pid, parent_event->attr.type,
+	       parent_event->attr.config, parent_event->attr.sample_period,
+	       parent_event->cpu);
 
 	/*
 	 * Instead of creating recursive hierarchies of events,
