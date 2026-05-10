@@ -2514,146 +2514,148 @@ static const char *const big_c_string =
 /* offset=124965 */
 "cgroup-switches\000software\000Number of context switches to a task in a different cgroup\000config=0xb\000\00000\000\000\000\000\000"
 /* offset=125068 */
+"task-clock-plus\000software\000Per-task high-resolution timer based event that includes off-CPU periods\000config=0xc\000\000001e-6msec\000\000\000\000\000"
+/* offset=125193 */
 "tool\000"
-/* offset=125073 */
+/* offset=125198 */
 "duration_time\000tool\000Wall clock interval time in nanoseconds\000config=1\000\00000\000\000\000\000\000"
-/* offset=125149 */
+/* offset=125274 */
 "user_time\000tool\000User (non-kernel) time in nanoseconds\000config=2\000\00000\000\000\000\000\000"
-/* offset=125219 */
+/* offset=125344 */
 "system_time\000tool\000System/kernel time in nanoseconds\000config=3\000\00000\000\000\000\000\000"
-/* offset=125287 */
+/* offset=125412 */
 "has_pmem\000tool\0001 if persistent memory installed otherwise 0\000config=4\000\00000\000\000\000\000\000"
-/* offset=125363 */
+/* offset=125488 */
 "num_cores\000tool\000Number of cores. A core consists of 1 or more thread, with each thread being associated with a logical Linux CPU\000config=5\000\00000\000\000\000\000\000"
-/* offset=125508 */
+/* offset=125633 */
 "num_cpus\000tool\000Number of logical Linux CPUs. There may be multiple such CPUs on a core\000config=6\000\00000\000\000\000\000\000"
-/* offset=125611 */
+/* offset=125736 */
 "num_cpus_online\000tool\000Number of online logical Linux CPUs. There may be multiple such CPUs on a core\000config=7\000\00000\000\000\000\000\000"
-/* offset=125728 */
+/* offset=125853 */
 "num_dies\000tool\000Number of dies. Each die has 1 or more cores\000config=8\000\00000\000\000\000\000\000"
-/* offset=125804 */
+/* offset=125929 */
 "num_packages\000tool\000Number of packages. Each package has 1 or more die\000config=9\000\00000\000\000\000\000\000"
-/* offset=125890 */
+/* offset=126015 */
 "slots\000tool\000Number of functional units that in parallel can execute parts of an instruction\000config=0xa\000\00000\000\000\000\000\000"
-/* offset=126000 */
+/* offset=126125 */
 "smt_on\000tool\0001 if simultaneous multithreading (aka hyperthreading) is enable otherwise 0\000config=0xb\000\00000\000\000\000\000\000"
-/* offset=126107 */
+/* offset=126232 */
 "system_tsc_freq\000tool\000The amount a Time Stamp Counter (TSC) increases per second\000config=0xc\000\00000\000\000\000\000\000"
-/* offset=126206 */
+/* offset=126331 */
 "core_wide\000tool\0001 if not SMT, if SMT are events being gathered on all SMT threads 1 otherwise 0\000config=0xd\000\00000\000\000\000\000\000"
-/* offset=126320 */
+/* offset=126445 */
 "target_cpu\000tool\0001 if CPUs being analyzed, 0 if threads/processes\000config=0xe\000\00000\000\000\000\000\000"
-/* offset=126404 */
+/* offset=126529 */
 "bp_l1_btb_correct\000branch\000L1 BTB Correction\000event=0x8a\000\00000\000\000\000\000\000"
-/* offset=126466 */
+/* offset=126591 */
 "bp_l2_btb_correct\000branch\000L2 BTB Correction\000event=0x8b\000\00000\000\000\000\000\000"
-/* offset=126528 */
+/* offset=126653 */
 "l3_cache_rd\000cache\000L3 cache access, read\000event=0x40\000\00000\000\000\000\000Attributable Level 3 cache access, read\000"
-/* offset=126626 */
+/* offset=126751 */
 "segment_reg_loads.any\000other\000Number of segment register loads\000event=6,period=200000,umask=0x80\000\00000\000\000\000\000\000"
-/* offset=126728 */
+/* offset=126853 */
 "dispatch_blocked.any\000other\000Memory cluster signals to block micro-op dispatch for any reason\000event=9,period=200000,umask=0x20\000\00000\000\000\000\000\000"
-/* offset=126861 */
+/* offset=126986 */
 "eist_trans\000other\000Number of Enhanced Intel SpeedStep(R) Technology (EIST) transitions\000event=0x3a,period=200000\000\00000\000\000\000\000\000"
-/* offset=126979 */
+/* offset=127104 */
 "hisi_sccl,ddrc\000"
-/* offset=126994 */
+/* offset=127119 */
 "uncore_hisi_ddrc.flux_wcmd\000uncore\000DDRC write commands\000event=2\000\00000\000\000\000\000\000"
-/* offset=127064 */
+/* offset=127189 */
 "uncore_cbox\000"
-/* offset=127076 */
+/* offset=127201 */
 "unc_cbo_xsnp_response.miss_eviction\000uncore\000A cross-core snoop resulted from L3 Eviction which misses in some processor core\000event=0x22,umask=0x81\000\00000\000\000\000\000\000"
-/* offset=127230 */
+/* offset=127355 */
 "event-hyphen\000uncore\000UNC_CBO_HYPHEN\000event=0xe0\000\00000\000\000\000\000\000"
-/* offset=127284 */
+/* offset=127409 */
 "event-two-hyph\000uncore\000UNC_CBO_TWO_HYPH\000event=0xc0\000\00000\000\000\000\000\000"
-/* offset=127342 */
+/* offset=127467 */
 "hisi_sccl,l3c\000"
-/* offset=127356 */
+/* offset=127481 */
 "uncore_hisi_l3c.rd_hit_cpipe\000uncore\000Total read hits\000event=7\000\00000\000\000\000\000\000"
-/* offset=127424 */
+/* offset=127549 */
 "uncore_imc_free_running\000"
-/* offset=127448 */
+/* offset=127573 */
 "uncore_imc_free_running.cache_miss\000uncore\000Total cache misses\000event=0x12\000\00000\000\000\000\000\000"
-/* offset=127528 */
+/* offset=127653 */
 "uncore_imc\000"
-/* offset=127539 */
+/* offset=127664 */
 "uncore_imc.cache_hits\000uncore\000Total cache hits\000event=0x34\000\00000\000\000\000\000\000"
-/* offset=127604 */
+/* offset=127729 */
 "uncore_sys_ddr_pmu\000"
-/* offset=127623 */
+/* offset=127748 */
 "sys_ddr_pmu.write_cycles\000uncore\000ddr write-cycles event\000event=0x2b\000v8\00000\000\000\000\000\000"
-/* offset=127699 */
+/* offset=127824 */
 "uncore_sys_ccn_pmu\000"
-/* offset=127718 */
+/* offset=127843 */
 "sys_ccn_pmu.read_cycles\000uncore\000ccn read-cycles event\000config=0x2c\0000x01\00000\000\000\000\000\000"
-/* offset=127795 */
+/* offset=127920 */
 "uncore_sys_cmn_pmu\000"
-/* offset=127814 */
+/* offset=127939 */
 "sys_cmn_pmu.hnf_cache_miss\000uncore\000Counts total cache misses in first lookup result (high priority)\000eventid=1,type=5\000(434|436|43c|43a).*\00000\000\000\000\000\000"
-/* offset=127957 */
+/* offset=128082 */
 "CPUs_utilized\000Default\000(software@cpu\\-clock\\,name\\=cpu\\-clock@ if #target_cpu else software@task\\-clock\\,name\\=task\\-clock@) / (duration_time * 1e9)\000\000Average CPU utilization\000\0001CPUs\000\000\000\000011"
-/* offset=128143 */
+/* offset=128268 */
 "cs_per_second\000Default\000software@context\\-switches\\,name\\=context\\-switches@ * 1e9 / (software@cpu\\-clock\\,name\\=cpu\\-clock@ if #target_cpu else software@task\\-clock\\,name\\=task\\-clock@)\000\000Context switches per CPU second\000\0001cs/sec\000\000\000\000011"
-/* offset=128376 */
+/* offset=128501 */
 "migrations_per_second\000Default\000software@cpu\\-migrations\\,name\\=cpu\\-migrations@ * 1e9 / (software@cpu\\-clock\\,name\\=cpu\\-clock@ if #target_cpu else software@task\\-clock\\,name\\=task\\-clock@)\000\000Process migrations to a new CPU per CPU second\000\0001migrations/sec\000\000\000\000011"
-/* offset=128636 */
+/* offset=128761 */
 "page_faults_per_second\000Default\000software@page\\-faults\\,name\\=page\\-faults@ * 1e9 / (software@cpu\\-clock\\,name\\=cpu\\-clock@ if #target_cpu else software@task\\-clock\\,name\\=task\\-clock@)\000\000Page faults per CPU second\000\0001faults/sec\000\000\000\000011"
-/* offset=128867 */
+/* offset=128992 */
 "insn_per_cycle\000Default\000instructions / cpu\\-cycles\000insn_per_cycle < 1\000Instructions Per Cycle\000\0001instructions\000\000\000\000001"
-/* offset=128980 */
+/* offset=129105 */
 "stalled_cycles_per_instruction\000Default\000(max(stalled\\-cycles\\-frontend, stalled\\-cycles\\-backend) / instructions if has_event(stalled\\-cycles\\-frontend) & has_event(stalled\\-cycles\\-backend) else (stalled\\-cycles\\-frontend / instructions if has_event(stalled\\-cycles\\-frontend) else (stalled\\-cycles\\-backend / instructions if has_event(stalled\\-cycles\\-backend) else 0)))\000\000Max front or backend stalls per instruction\000\000\000\000\000\000001"
-/* offset=129405 */
+/* offset=129530 */
 "frontend_cycles_idle\000Default\000(stalled\\-cycles\\-frontend / cpu\\-cycles if has_event(stalled\\-cycles\\-frontend) else 0)\000frontend_cycles_idle > 0.1\000Frontend stalls per cycle\000\000\000\000\000\000001"
-/* offset=129584 */
+/* offset=129709 */
 "backend_cycles_idle\000Default\000(stalled\\-cycles\\-backend / cpu\\-cycles if has_event(stalled\\-cycles\\-backend) else 0)\000backend_cycles_idle > 0.2\000Backend stalls per cycle\000\000\000\000\000\000001"
-/* offset=129758 */
+/* offset=129883 */
 "cycles_frequency\000Default\000cpu\\-cycles / (software@cpu\\-clock\\,name\\=cpu\\-clock@ if #target_cpu else software@task\\-clock\\,name\\=task\\-clock@)\000\000Cycles per CPU second\000\0001GHz\000\000\000\000011"
-/* offset=129934 */
+/* offset=130059 */
 "branch_frequency\000Default\000branches / (software@cpu\\-clock\\,name\\=cpu\\-clock@ if #target_cpu else software@task\\-clock\\,name\\=task\\-clock@)\000\000Branches per CPU second\000\0001000M/sec\000\000\000\000011"
-/* offset=130114 */
+/* offset=130239 */
 "branch_miss_rate\000Default\000branch\\-misses / branches\000branch_miss_rate > 0.05\000Branch miss rate\000\000100%\000\000\000\000001"
-/* offset=130218 */
+/* offset=130343 */
 "l1d_miss_rate\000Default2\000L1\\-dcache\\-load\\-misses / L1\\-dcache\\-loads\000l1d_miss_rate > 0.05\000L1D  miss rate\000\000100%\000\000\000\000001"
-/* offset=130334 */
+/* offset=130459 */
 "llc_miss_rate\000Default2\000LLC\\-load\\-misses / LLC\\-loads\000llc_miss_rate > 0.05\000LLC miss rate\000\000100%\000\000\000\000001"
-/* offset=130435 */
+/* offset=130560 */
 "l1i_miss_rate\000Default3\000L1\\-icache\\-load\\-misses / L1\\-icache\\-loads\000l1i_miss_rate > 0.05\000L1I miss rate\000\000100%\000\000\000\000001"
-/* offset=130550 */
+/* offset=130675 */
 "dtlb_miss_rate\000Default3\000dTLB\\-load\\-misses / dTLB\\-loads\000dtlb_miss_rate > 0.05\000dTLB miss rate\000\000100%\000\000\000\000001"
-/* offset=130656 */
+/* offset=130781 */
 "itlb_miss_rate\000Default3\000iTLB\\-load\\-misses / iTLB\\-loads\000itlb_miss_rate > 0.05\000iTLB miss rate\000\000100%\000\000\000\000001"
-/* offset=130762 */
+/* offset=130887 */
 "l1_prefetch_miss_rate\000Default4\000L1\\-dcache\\-prefetch\\-misses / L1\\-dcache\\-prefetches\000l1_prefetch_miss_rate > 0.05\000L1 prefetch miss rate\000\000100%\000\000\000\000001"
-/* offset=130910 */
+/* offset=131035 */
 "CPI\000\0001 / IPC\000\000\000\000\000\000\000\000000"
-/* offset=130933 */
+/* offset=131058 */
 "IPC\000group1\000inst_retired.any / cpu_clk_unhalted.thread\000\000\000\000\000\000\000\000000"
-/* offset=130997 */
+/* offset=131122 */
 "Frontend_Bound_SMT\000\000idq_uops_not_delivered.core / (4 * (cpu_clk_unhalted.thread / 2 * (1 + cpu_clk_unhalted.one_thread_active / cpu_clk_unhalted.ref_xclk)))\000\000\000\000\000\000\000\000000"
-/* offset=131164 */
+/* offset=131289 */
 "dcache_miss_cpi\000\000l1d\\-loads\\-misses / inst_retired.any\000\000\000\000\000\000\000\000000"
-/* offset=131229 */
+/* offset=131354 */
 "icache_miss_cycles\000\000l1i\\-loads\\-misses / inst_retired.any\000\000\000\000\000\000\000\000000"
-/* offset=131297 */
+/* offset=131422 */
 "cache_miss_cycles\000group1\000dcache_miss_cpi + icache_miss_cycles\000\000\000\000\000\000\000\000000"
-/* offset=131369 */
+/* offset=131494 */
 "DCache_L2_All_Hits\000\000l2_rqsts.demand_data_rd_hit + l2_rqsts.pf_hit + l2_rqsts.rfo_hit\000\000\000\000\000\000\000\000000"
-/* offset=131464 */
+/* offset=131589 */
 "DCache_L2_All_Miss\000\000max(l2_rqsts.all_demand_data_rd - l2_rqsts.demand_data_rd_hit, 0) + l2_rqsts.pf_miss + l2_rqsts.rfo_miss\000\000\000\000\000\000\000\000000"
-/* offset=131599 */
+/* offset=131724 */
 "DCache_L2_All\000\000DCache_L2_All_Hits + DCache_L2_All_Miss\000\000\000\000\000\000\000\000000"
-/* offset=131664 */
+/* offset=131789 */
 "DCache_L2_Hits\000\000d_ratio(DCache_L2_All_Hits, DCache_L2_All)\000\000\000\000\000\000\000\000000"
-/* offset=131733 */
+/* offset=131858 */
 "DCache_L2_Misses\000\000d_ratio(DCache_L2_All_Miss, DCache_L2_All)\000\000\000\000\000\000\000\000000"
-/* offset=131804 */
+/* offset=131929 */
 "M1\000\000ipc + M2\000\000\000\000\000\000\000\000000"
-/* offset=131827 */
+/* offset=131952 */
 "M2\000\000ipc + M1\000\000\000\000\000\000\000\000000"
-/* offset=131850 */
+/* offset=131975 */
 "M3\000\0001 / M3\000\000\000\000\000\000\000\000000"
-/* offset=131871 */
+/* offset=131996 */
 "L1D_Cache_Fill_BW\000\00064 * l1d.replacement / 1e9 / duration_time\000\000\000\000\000\000\000\000000"
 ;
 
@@ -5150,36 +5152,38 @@ static const struct compact_pmu_event pmu_events__common_software[] = {
 	{ 123791 },
 	/* task-clock\000software\000Per-task high-resolution timer based event\000config=1... */
 	{ 123608 },
+	/* task-clock-plus\000software\000Per-task high-resolution timer based event that i... */
+	{ 125068 },
 };
 static const struct compact_pmu_event pmu_events__common_tool[] = {
 	/* core_wide\000tool\0001 if not SMT, if SMT are events being gathered on all SMT t... */
-	{ 126206 },
+	{ 126331 },
 	/* duration_time\000tool\000Wall clock interval time in nanoseconds\000config=1\000... */
-	{ 125073 },
+	{ 125198 },
 	/* has_pmem\000tool\0001 if persistent memory installed otherwise 0\000config=4\000... */
-	{ 125287 },
+	{ 125412 },
 	/* num_cores\000tool\000Number of cores. A core consists of 1 or more thread, with ... */
-	{ 125363 },
+	{ 125488 },
 	/* num_cpus\000tool\000Number of logical Linux CPUs. There may be multiple such CPU... */
-	{ 125508 },
+	{ 125633 },
 	/* num_cpus_online\000tool\000Number of online logical Linux CPUs. There may be mul... */
-	{ 125611 },
+	{ 125736 },
 	/* num_dies\000tool\000Number of dies. Each die has 1 or more cores\000config=8\000... */
-	{ 125728 },
+	{ 125853 },
 	/* num_packages\000tool\000Number of packages. Each package has 1 or more die\000co... */
-	{ 125804 },
+	{ 125929 },
 	/* slots\000tool\000Number of functional units that in parallel can execute parts o... */
-	{ 125890 },
+	{ 126015 },
 	/* smt_on\000tool\0001 if simultaneous multithreading (aka hyperthreading) is enabl... */
-	{ 126000 },
+	{ 126125 },
 	/* system_time\000tool\000System/kernel time in nanoseconds\000config=3\000\00000\0... */
-	{ 125219 },
+	{ 125344 },
 	/* system_tsc_freq\000tool\000The amount a Time Stamp Counter (TSC) increases per s... */
-	{ 126107 },
+	{ 126232 },
 	/* target_cpu\000tool\0001 if CPUs being analyzed, 0 if threads/processes\000config... */
-	{ 126320 },
+	{ 126445 },
 	/* user_time\000tool\000User (non-kernel) time in nanoseconds\000config=2\000\00000... */
-	{ 125149 },
+	{ 125274 },
 
 };
 
@@ -5197,45 +5201,45 @@ static const struct pmu_table_entry pmu_events__common[] = {
 	{
 		.entries = pmu_events__common_tool,
 		.num_entries = ARRAY_SIZE(pmu_events__common_tool),
-		.pmu_name = { 125068 /* tool\000 */ },
+		.pmu_name = { 125193 /* tool\000 */ },
 	},
 };
 
 static const struct compact_pmu_event pmu_metrics__common_default_core[] = {
 	/* CPUs_utilized\000Default\000(software@cpu\\-clock\\,name\\=cpu\\-clock@ if #targ... */
-	{ 127957 },
+	{ 128082 },
 	/* backend_cycles_idle\000Default\000(stalled\\-cycles\\-backend / cpu\\-cycles if ... */
-	{ 129584 },
+	{ 129709 },
 	/* branch_frequency\000Default\000branches / (software@cpu\\-clock\\,name\\=cpu\\-c... */
-	{ 129934 },
+	{ 130059 },
 	/* branch_miss_rate\000Default\000branch\\-misses / branches\000branch_miss_rate > ... */
-	{ 130114 },
+	{ 130239 },
 	/* cs_per_second\000Default\000software@context\\-switches\\,name\\=context\\-switc... */
-	{ 128143 },
+	{ 128268 },
 	/* cycles_frequency\000Default\000cpu\\-cycles / (software@cpu\\-clock\\,name\\=cpu... */
-	{ 129758 },
+	{ 129883 },
 	/* dtlb_miss_rate\000Default3\000dTLB\\-load\\-misses / dTLB\\-loads\000dtlb_miss_r... */
-	{ 130550 },
+	{ 130675 },
 	/* frontend_cycles_idle\000Default\000(stalled\\-cycles\\-frontend / cpu\\-cycles i... */
-	{ 129405 },
+	{ 129530 },
 	/* insn_per_cycle\000Default\000instructions / cpu\\-cycles\000insn_per_cycle < 1\0... */
-	{ 128867 },
+	{ 128992 },
 	/* itlb_miss_rate\000Default3\000iTLB\\-load\\-misses / iTLB\\-loads\000itlb_miss_r... */
-	{ 130656 },
+	{ 130781 },
 	/* l1_prefetch_miss_rate\000Default4\000L1\\-dcache\\-prefetch\\-misses / L1\\-dcac... */
-	{ 130762 },
+	{ 130887 },
 	/* l1d_miss_rate\000Default2\000L1\\-dcache\\-load\\-misses / L1\\-dcache\\-loads\0... */
-	{ 130218 },
+	{ 130343 },
 	/* l1i_miss_rate\000Default3\000L1\\-icache\\-load\\-misses / L1\\-icache\\-loads\0... */
-	{ 130435 },
+	{ 130560 },
 	/* llc_miss_rate\000Default2\000LLC\\-load\\-misses / LLC\\-loads\000llc_miss_rate ... */
-	{ 130334 },
+	{ 130459 },
 	/* migrations_per_second\000Default\000software@cpu\\-migrations\\,name\\=cpu\\-mig... */
-	{ 128376 },
+	{ 128501 },
 	/* page_faults_per_second\000Default\000software@page\\-faults\\,name\\=page\\-faul... */
-	{ 128636 },
+	{ 128761 },
 	/* stalled_cycles_per_instruction\000Default\000(max(stalled\\-cycles\\-frontend, s... */
-	{ 128980 },
+	{ 129105 },
 
 };
 
@@ -5249,41 +5253,41 @@ static const struct pmu_table_entry pmu_metrics__common[] = {
 
 static const struct compact_pmu_event pmu_events__test_soc_cpu_default_core[] = {
 	/* bp_l1_btb_correct\000branch\000L1 BTB Correction\000event=0x8a\000\00000\000\000... */
-	{ 126404 },
+	{ 126529 },
 	/* bp_l2_btb_correct\000branch\000L2 BTB Correction\000event=0x8b\000\00000\000\000... */
-	{ 126466 },
+	{ 126591 },
 	/* dispatch_blocked.any\000other\000Memory cluster signals to block micro-op dispat... */
-	{ 126728 },
+	{ 126853 },
 	/* eist_trans\000other\000Number of Enhanced Intel SpeedStep(R) Technology (EIST) t... */
-	{ 126861 },
+	{ 126986 },
 	/* l3_cache_rd\000cache\000L3 cache access, read\000event=0x40\000\00000\000\000\00... */
-	{ 126528 },
+	{ 126653 },
 	/* segment_reg_loads.any\000other\000Number of segment register loads\000event=6,pe... */
-	{ 126626 },
+	{ 126751 },
 };
 static const struct compact_pmu_event pmu_events__test_soc_cpu_hisi_sccl_ddrc[] = {
 	/* uncore_hisi_ddrc.flux_wcmd\000uncore\000DDRC write commands\000event=2\000\00000... */
-	{ 126994 },
+	{ 127119 },
 };
 static const struct compact_pmu_event pmu_events__test_soc_cpu_hisi_sccl_l3c[] = {
 	/* uncore_hisi_l3c.rd_hit_cpipe\000uncore\000Total read hits\000event=7\000\00000\0... */
-	{ 127356 },
+	{ 127481 },
 };
 static const struct compact_pmu_event pmu_events__test_soc_cpu_uncore_cbox[] = {
 	/* event-hyphen\000uncore\000UNC_CBO_HYPHEN\000event=0xe0\000\00000\000\000\000\000... */
-	{ 127230 },
+	{ 127355 },
 	/* event-two-hyph\000uncore\000UNC_CBO_TWO_HYPH\000event=0xc0\000\00000\000\000\000... */
-	{ 127284 },
+	{ 127409 },
 	/* unc_cbo_xsnp_response.miss_eviction\000uncore\000A cross-core snoop resulted fro... */
-	{ 127076 },
+	{ 127201 },
 };
 static const struct compact_pmu_event pmu_events__test_soc_cpu_uncore_imc[] = {
 	/* uncore_imc.cache_hits\000uncore\000Total cache hits\000event=0x34\000\00000\000\... */
-	{ 127539 },
+	{ 127664 },
 };
 static const struct compact_pmu_event pmu_events__test_soc_cpu_uncore_imc_free_running[] = {
 	/* uncore_imc_free_running.cache_miss\000uncore\000Total cache misses\000event=0x12... */
-	{ 127448 },
+	{ 127573 },
 
 };
 
@@ -5296,61 +5300,61 @@ static const struct pmu_table_entry pmu_events__test_soc_cpu[] = {
 	{
 		.entries = pmu_events__test_soc_cpu_hisi_sccl_ddrc,
 		.num_entries = ARRAY_SIZE(pmu_events__test_soc_cpu_hisi_sccl_ddrc),
-		.pmu_name = { 126979 /* hisi_sccl,ddrc\000 */ },
+		.pmu_name = { 127104 /* hisi_sccl,ddrc\000 */ },
 	},
 	{
 		.entries = pmu_events__test_soc_cpu_hisi_sccl_l3c,
 		.num_entries = ARRAY_SIZE(pmu_events__test_soc_cpu_hisi_sccl_l3c),
-		.pmu_name = { 127342 /* hisi_sccl,l3c\000 */ },
+		.pmu_name = { 127467 /* hisi_sccl,l3c\000 */ },
 	},
 	{
 		.entries = pmu_events__test_soc_cpu_uncore_cbox,
 		.num_entries = ARRAY_SIZE(pmu_events__test_soc_cpu_uncore_cbox),
-		.pmu_name = { 127064 /* uncore_cbox\000 */ },
+		.pmu_name = { 127189 /* uncore_cbox\000 */ },
 	},
 	{
 		.entries = pmu_events__test_soc_cpu_uncore_imc,
 		.num_entries = ARRAY_SIZE(pmu_events__test_soc_cpu_uncore_imc),
-		.pmu_name = { 127528 /* uncore_imc\000 */ },
+		.pmu_name = { 127653 /* uncore_imc\000 */ },
 	},
 	{
 		.entries = pmu_events__test_soc_cpu_uncore_imc_free_running,
 		.num_entries = ARRAY_SIZE(pmu_events__test_soc_cpu_uncore_imc_free_running),
-		.pmu_name = { 127424 /* uncore_imc_free_running\000 */ },
+		.pmu_name = { 127549 /* uncore_imc_free_running\000 */ },
 	},
 };
 
 static const struct compact_pmu_event pmu_metrics__test_soc_cpu_default_core[] = {
 	/* CPI\000\0001 / IPC\000\000\000\000\000\000\000\000000 */
-	{ 130910 },
+	{ 131035 },
 	/* DCache_L2_All\000\000DCache_L2_All_Hits + DCache_L2_All_Miss\000\000\000\000\000... */
-	{ 131599 },
+	{ 131724 },
 	/* DCache_L2_All_Hits\000\000l2_rqsts.demand_data_rd_hit + l2_rqsts.pf_hit + l2_rqs... */
-	{ 131369 },
+	{ 131494 },
 	/* DCache_L2_All_Miss\000\000max(l2_rqsts.all_demand_data_rd - l2_rqsts.demand_data... */
-	{ 131464 },
+	{ 131589 },
 	/* DCache_L2_Hits\000\000d_ratio(DCache_L2_All_Hits, DCache_L2_All)\000\000\000\000... */
-	{ 131664 },
+	{ 131789 },
 	/* DCache_L2_Misses\000\000d_ratio(DCache_L2_All_Miss, DCache_L2_All)\000\000\000\0... */
-	{ 131733 },
+	{ 131858 },
 	/* Frontend_Bound_SMT\000\000idq_uops_not_delivered.core / (4 * (cpu_clk_unhalted.t... */
-	{ 130997 },
+	{ 131122 },
 	/* IPC\000group1\000inst_retired.any / cpu_clk_unhalted.thread\000\000\000\000\000\... */
-	{ 130933 },
+	{ 131058 },
 	/* L1D_Cache_Fill_BW\000\00064 * l1d.replacement / 1e9 / duration_time\000\000\000\... */
-	{ 131871 },
+	{ 131996 },
 	/* M1\000\000ipc + M2\000\000\000\000\000\000\000\000000 */
-	{ 131804 },
+	{ 131929 },
 	/* M2\000\000ipc + M1\000\000\000\000\000\000\000\000000 */
-	{ 131827 },
+	{ 131952 },
 	/* M3\000\0001 / M3\000\000\000\000\000\000\000\000000 */
-	{ 131850 },
+	{ 131975 },
 	/* cache_miss_cycles\000group1\000dcache_miss_cpi + icache_miss_cycles\000\000\000\... */
-	{ 131297 },
+	{ 131422 },
 	/* dcache_miss_cpi\000\000l1d\\-loads\\-misses / inst_retired.any\000\000\000\000\0... */
-	{ 131164 },
+	{ 131289 },
 	/* icache_miss_cycles\000\000l1i\\-loads\\-misses / inst_retired.any\000\000\000\00... */
-	{ 131229 },
+	{ 131354 },
 
 };
 
@@ -5364,15 +5368,15 @@ static const struct pmu_table_entry pmu_metrics__test_soc_cpu[] = {
 
 static const struct compact_pmu_event pmu_events__test_soc_sys_uncore_sys_ccn_pmu[] = {
 	/* sys_ccn_pmu.read_cycles\000uncore\000ccn read-cycles event\000config=0x2c\0000x0... */
-	{ 127718 },
+	{ 127843 },
 };
 static const struct compact_pmu_event pmu_events__test_soc_sys_uncore_sys_cmn_pmu[] = {
 	/* sys_cmn_pmu.hnf_cache_miss\000uncore\000Counts total cache misses in first looku... */
-	{ 127814 },
+	{ 127939 },
 };
 static const struct compact_pmu_event pmu_events__test_soc_sys_uncore_sys_ddr_pmu[] = {
 	/* sys_ddr_pmu.write_cycles\000uncore\000ddr write-cycles event\000event=0x2b\000v8... */
-	{ 127623 },
+	{ 127748 },
 
 };
 
@@ -5380,17 +5384,17 @@ static const struct pmu_table_entry pmu_events__test_soc_sys[] = {
 	{
 		.entries = pmu_events__test_soc_sys_uncore_sys_ccn_pmu,
 		.num_entries = ARRAY_SIZE(pmu_events__test_soc_sys_uncore_sys_ccn_pmu),
-		.pmu_name = { 127699 /* uncore_sys_ccn_pmu\000 */ },
+		.pmu_name = { 127824 /* uncore_sys_ccn_pmu\000 */ },
 	},
 	{
 		.entries = pmu_events__test_soc_sys_uncore_sys_cmn_pmu,
 		.num_entries = ARRAY_SIZE(pmu_events__test_soc_sys_uncore_sys_cmn_pmu),
-		.pmu_name = { 127795 /* uncore_sys_cmn_pmu\000 */ },
+		.pmu_name = { 127920 /* uncore_sys_cmn_pmu\000 */ },
 	},
 	{
 		.entries = pmu_events__test_soc_sys_uncore_sys_ddr_pmu,
 		.num_entries = ARRAY_SIZE(pmu_events__test_soc_sys_uncore_sys_ddr_pmu),
-		.pmu_name = { 127604 /* uncore_sys_ddr_pmu\000 */ },
+		.pmu_name = { 127729 /* uncore_sys_ddr_pmu\000 */ },
 	},
 };
 
