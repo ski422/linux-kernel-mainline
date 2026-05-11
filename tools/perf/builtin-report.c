@@ -284,6 +284,7 @@ static int process_sample_event(const struct perf_tool *tool,
 		return 0;
 
 	addr_location__init(&al);
+	al.offcpu_subclass = sample->offcpu_subclass;
 	if (machine__resolve(machine, &al, sample) < 0) {
 		pr_debug("problem processing %s (%u) event at offset %#" PRIx64 ", skipping it.\n",
 			 perf_event__name(event->header.type), event->header.type,
