@@ -1306,17 +1306,27 @@ int sample__resolve_callchain(struct perf_sample *sample,
 	 * leaf, promote it into addr_location so hist entries are keyed by
 	 * the blocking site rather than perf internals. If no boundary is
 	 * found the cursor is untouched and we leave addr_location alone.
+	 *
+	 * The cursor stores ip in the raw kernel/user VA space (see
+	 * thread__resolve_callchain -> callchain_cursor_append), whereas
+	 * machine__resolve has already mapped al->addr through
+	 * map__map_ip() into the dso-relative space that sym->start/end use
+	 * everywhere else (annotate __symbol__inc_addr_samples ERANGE
+	 * check, srcline lookup, ...). Mirror that translation when we
+	 * adopt the new leaf, otherwise the TUI annotate path aborts the
+	 * whole session with "ordered event processing failed (-34)".
 	 */
 	new_leaf = callchain_cursor__trim_offcpu_prefix(cursor,
 						       sample->offcpu_subclass);
 	if (new_leaf) {
-		al->addr = new_leaf->ip;
 		if (new_leaf->ms.sym)
 			al->sym = new_leaf->ms.sym;
 		if (new_leaf->ms.map) {
 			map__put(al->map);
 			al->map = map__get(new_leaf->ms.map);
 		}
+		al->addr = al->map ? map__map_ip(al->map, new_leaf->ip)
+				   : new_leaf->ip;
 	}
 	return 0;
 }
