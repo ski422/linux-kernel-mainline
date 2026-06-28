@@ -12675,26 +12675,21 @@ static s64 task_clock_plus_inject_samples(struct perf_event *event,
 		return 0;
 
 	/*
-	 * Mirror task_clock's hrtimer-overflow exclude_* policy with one
-	 * task-clock-plus specific twist: off-CPU activity is conceptually
-	 * a kernel event (the schedule out/in happens inside the kernel),
-	 * so exclude_kernel suppresses the entire batch regardless of what
-	 * mode the attribution regs are in. The injected pt_regs come from
-	 * task_pt_regs(current) and therefore always reports user_mode(),
-	 * which would otherwise sneak past the standard mode check.
-	 *
-	 * period_left was already advanced above, mirroring the hrtimer
-	 * model where the timer keeps ticking and only the overflow record
-	 * is suppressed.
+	 * Mirror task_clock's hrtimer-overflow exclude_* policy. The
+	 * injected regs come from perf_fetch_caller_regs() and therefore
+	 * always report kernel mode, so exclude_kernel naturally drops the
+	 * batch and exclude_user keeps it. period_left was already advanced
+	 * above, mirroring the hrtimer model where the timer keeps ticking
+	 * and only the overflow record is suppressed.
 	 *
 	 * The PERF_HES_STOPPED arm of perf_exclude_event() is intentionally
 	 * skipped: at our inject points (sched_task / pmu->add) the bit is
 	 * still set (pmu->start() runs after pmu->add()), unlike the
 	 * hrtimer path where pmu->start() always precedes the overflow.
 	 */
-	if (event->attr.exclude_kernel)
-		return iteration;
 	if (event->attr.exclude_user && user_mode(regs))
+		return iteration;
+	if (event->attr.exclude_kernel && !user_mode(regs))
 		return iteration;
 	if (event->attr.exclude_idle && is_idle_task(current))
 		return iteration;
@@ -12732,7 +12727,7 @@ static s64 task_clock_plus_inject_samples(struct perf_event *event,
 static void task_clock_plus_event_inject(struct perf_event *event,
 					 struct perf_ctx_data *ctx_data)
 {
-	struct pt_regs *regs;
+	struct pt_regs regs;
 	u64 sched_out_ts, T_in;
 	s64 delta_total;
 
@@ -12745,13 +12740,19 @@ static void task_clock_plus_event_inject(struct perf_event *event,
 		return;
 
 	/*
-	 * TODO: kernel callchain (blocking site) is dropped; only the
-	 * user-mode stack is captured. Blocking reason is conveyed via
-	 * perf_sample::offcpu_subclass instead.
+	 * Snapshot kernel regs here so the unwinder can walk the task's
+	 * kernel stack up through the blocking primitive (io_schedule,
+	 * schedule, ...) and on to user mode. The perf-internal +
+	 * scheduler prefix that this leaves at the leaf is trimmed by the
+	 * perf tool in sample__resolve_callchain() using
+	 * sample->offcpu_subclass to pick the boundary symbol.
+	 *
+	 * perf_fetch_caller_regs() requires a zero-filled pt_regs.
 	 */
-	regs = task_pt_regs(current);
+	memset(&regs, 0, sizeof(regs));
+	perf_fetch_caller_regs(&regs);
 
-	task_clock_plus_inject_samples(event, regs, sched_out_ts, T_in);
+	task_clock_plus_inject_samples(event, &regs, sched_out_ts, T_in);
 }
 
 /*
