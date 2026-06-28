@@ -1695,6 +1695,9 @@ static int perf_sample__fprintf_bts(struct perf_sample *sample,
 						      sample, NULL, NULL,
 						      scripting_max_stack))
 				cursor = NULL;
+			else
+				callchain_cursor__trim_offcpu_prefix(cursor,
+								     sample->offcpu_subclass);
 		}
 		if (cursor == NULL) {
 			printed += fprintf(fp, " ");
@@ -2521,6 +2524,9 @@ static void process_event(struct perf_script *script,
 						      sample, NULL, NULL,
 						      scripting_max_stack))
 				cursor = NULL;
+			else
+				callchain_cursor__trim_offcpu_prefix(cursor,
+								     sample->offcpu_subclass);
 		}
 		fputc(cursor ? '\n' : ' ', fp);
 		sample__fprintf_sym(sample, al, 0, output[type].print_ip_opts, cursor,
@@ -2809,6 +2815,9 @@ static int process_deferred_sample_event(const struct perf_tool *tool,
 						      scripting_max_stack)) {
 				pr_info("cannot resolve deferred callchains\n");
 				cursor = NULL;
+			} else {
+				callchain_cursor__trim_offcpu_prefix(cursor,
+								     sample->offcpu_subclass);
 			}
 		}
 
