@@ -1798,20 +1798,14 @@ void evsel__config(struct evsel *evsel, const struct record_opts *opts,
 	}
 
 	/*
-	 * task-clock-plus emits one PERF_RECORD_SAMPLE per off-CPU window
-	 * and stuffs the per-window period (= "how many sample periods this
-	 * window represents") into the record's PERF_SAMPLE_PERIOD field.
-	 * The kernel side refuses fixed-period openers without the bit, so
-	 * default it on here. We honor an explicit --no-period choice
-	 * (opts->period_set && !opts->period above) by leaving the bit
-	 * cleared and letting the kernel return -EINVAL, which makes the
-	 * conflict observable to the user instead of silently overridden.
-	 *
-	 * Frequency mode forces PERF_SAMPLE_PERIOD on a few lines above
-	 * (see "if (attr->freq)") so no extra handling is needed here.
+	 * Kernel side enforces PERF_SAMPLE_PERIOD for task-clock-plus
+	 * regardless of -F/-c (window length is stuffed into sample->period
+	 * on the coalesced record). Default the bit on; --no-period falls
+	 * through and surfaces as -EINVAL from the kernel so the conflict
+	 * is observable instead of silently overridden.
 	 */
 	if (evsel__match(evsel, SOFTWARE, SW_TASK_CLOCK_PLUS) &&
-	    !attr->freq && !opts->period_set)
+	    !opts->period_set)
 		evsel__set_sample_bit(evsel, PERIOD);
 
 	/*
