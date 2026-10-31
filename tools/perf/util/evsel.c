@@ -1155,6 +1155,20 @@ static void __evsel__config_callchain(struct evsel *evsel, const struct record_o
 
 	if (param->defer && !attr->exclude_callchain_user)
 		attr->defer_callchain = 1;
+
+	/*
+	 * task-clock-plus emits off-CPU samples at sched-in, after a possibly
+	 * long sleep, where the user stack may not be accessible without a
+	 * fault (e.g. NUMA hinting). Defer its user callchain even without
+	 * ",defer", and let the event output the deferred record itself so
+	 * other events keep their own callchain mode.
+	 */
+	if (!param->defer && param->record_mode == CALLCHAIN_FP &&
+	    !attr->exclude_callchain_user &&
+	    evsel__match(evsel, SOFTWARE, SW_TASK_CLOCK_PLUS)) {
+		attr->defer_callchain = 1;
+		attr->defer_output = 1;
+	}
 }
 
 void evsel__config_callchain(struct evsel *evsel, const struct record_opts *opts,
@@ -1715,7 +1729,8 @@ void evsel__config(struct evsel *evsel, const struct record_opts *opts,
 	attr->mmap2    = track && !perf_missing_features.mmap2;
 	attr->comm     = track;
 	attr->build_id = track && opts->build_id;
-	attr->defer_output = track && callchain && callchain->defer;
+	if (track && callchain && callchain->defer)
+		attr->defer_output = 1;
 
 	/*
 	 * ksymbol is tracked separately with text poke because it needs to be
